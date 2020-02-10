@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import { v4 } from "uuid";
+import Pusher from 'pusher-js';
 
 
 class Canvas extends Component {
@@ -8,6 +9,9 @@ class Canvas extends Component {
     this.onMouseDown = this.onMouseDown.bind(this);
     this.onMouseMove = this.onMouseMove.bind(this);
     this.endPaintEvent = this.endPaintEvent.bind(this);
+    this.pusher = new Pusher('9f4c9231173f676cecf9', {
+      cluster: 'eu',
+    })
   }
   isPainting = false;
   // Different stroke styles to be used for user and guest
@@ -73,6 +77,15 @@ class Canvas extends Component {
   }
   componentDidMount() {
     // Here we set up the properties of the canvas element.
+    const channel = this.pusher.subscribe('painting');
+    channel.bind('draw', (data) => {
+      const { userId, line } = data;
+      if (userId !== this.userId) {
+        line.forEach((position) => {
+          this.paint(position.start, position.stop, this.guestStrokeStyle);
+        });
+      }
+    });
     this.canvas.width = 1000;
     this.canvas.height = 800;
     this.ctx = this.canvas.getContext("2d");
